@@ -1,8 +1,7 @@
 import csv
 import sys
 import os.path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QInputDialog, QComboBox, QDialog
-from PyQt6.QtGui import QGuiApplication,QFont, QColor
+from PyQt6.QtWidgets import QApplication, QAbstractScrollArea, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QInputDialog, QComboBox, QDialog
 from PyQt6.QtCore import Qt
 from PyQt6 import QtCore
 
@@ -144,7 +143,7 @@ class MainWindow(QMainWindow):
         if not os.path.exists(self.course_database):
             QMessageBox.warning(self, "Error", "No course has been added yet.")
             return
-        
+
         # Create a dialog window to display the list of courses
         dialog = QDialog(self)
         dialog.setWindowTitle("List of Courses")
@@ -168,10 +167,14 @@ class MainWindow(QMainWindow):
         for i, row_data in enumerate(data):
             for j, field in enumerate(self.course_fields):
                 item = QTableWidgetItem(row_data[field])
+                item.setFlags(item.flags() & Qt.ItemFlag.ItemIsEditable)  # Set cell as read-only
                 table.setItem(i, j, item)
 
+        table.resizeColumnsToContents()  # Adjust column widths
+        table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)  # Adjust cell sizes to content
+
         layout.addWidget(table)
-        dialog.exec()  # display the dialog window
+        dialog.exec()  # Display the dialog window
 
     # C
     def update_course(self):
@@ -441,6 +444,7 @@ class MainWindow(QMainWindow):
                 if id == student[1]:
                     found = True
                     self.display_update_form(student, i)
+                    self.update_student_btn.setEnabled(False)
                     break
 
         if not found:
@@ -531,6 +535,7 @@ class MainWindow(QMainWindow):
             self.v_layout.removeWidget(self.update_widget)
             self.update_widget.deleteLater()
             self.update_widget = None
+            self.update_student_btn.setEnabled(True)
 
     # 5
     def delete_student(self):
@@ -567,10 +572,10 @@ class MainWindow(QMainWindow):
         if not os.path.exists(self.student_database):
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
-        
+
         dialog = QDialog(self)
         dialog.setWindowTitle("List of Students")
-        dialog.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
+        dialog.setWindowModality(Qt.WindowModality.WindowModal)
         dialog.resize(400, 300)
         layout = QVBoxLayout(dialog)
 
@@ -590,7 +595,11 @@ class MainWindow(QMainWindow):
         for i, row_data in enumerate(data):
             for j, field in enumerate(self.student_fields):
                 item = QTableWidgetItem(row_data[field])
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)  # Set cell as read-only
                 table.setItem(i, j, item)
+
+        table.resizeColumnsToContents()  # Adjust column widths
+        table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)  # Adjust cell sizes to content
 
         layout.addWidget(table)
         dialog.exec()
