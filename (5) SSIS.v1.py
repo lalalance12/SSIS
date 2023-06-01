@@ -144,6 +144,16 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "No course has been added yet.")
             return
 
+        
+        with open(self.course_database, 'r', newline='') as csv_file:
+            reader = csv.reader(csv_file)
+            
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
+            
+            
         # Create a dialog window to display the list of courses
         dialog = QDialog(self)
         dialog.setWindowTitle("List of Courses")
@@ -185,6 +195,14 @@ class MainWindow(QMainWindow):
         
         with open(self.course_database, 'r', newline='') as csv_file:
             reader = csv.reader(csv_file)
+            
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
+            csv_file.seek(0)  # Reset file pointer to the beginning
+            
+            
             next(reader)
             courses = [row[1] for row in reader]
 
@@ -253,9 +271,15 @@ class MainWindow(QMainWindow):
         if not os.path.exists(self.course_database):
             QMessageBox.warning(self, "Error", "No course has been added yet.")
             return
-        
+
         with open(self.course_database, 'r', newline='') as csv_file:
             reader = csv.reader(csv_file)
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
+            csv_file.seek(0)  # Reset file pointer to the beginning
+
             next(reader)
             courses = [row[1] for row in reader]
 
@@ -280,6 +304,14 @@ class MainWindow(QMainWindow):
         if not os.path.exists('Course Information.csv'):
             QMessageBox.warning(self, "Error", "No courses added yet!")
             return
+        
+        with open(self.course_database, 'r', newline='') as csv_file:
+            reader = csv.reader(csv_file)
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
+        
         
         self.add_widget = QWidget()
         self.add_layout = QVBoxLayout(self.add_widget)
@@ -318,6 +350,7 @@ class MainWindow(QMainWindow):
         self.add_layout.addWidget(self.back_btn)
         
         self.enable_add_student_button()
+        self.update_student_btn.setEnabled(True)
 
         self.v_layout.addWidget(self.add_widget)
         
@@ -337,6 +370,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "Please fill in all fields!")
                 return
             student_data.append(data)
+            
         
         header = ['Name', 'ID', 'Course Code']
         file_exists = os.path.isfile('Students Information.csv')
@@ -376,6 +410,15 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
         
+        # Check if there are data in the CSV file except the header
+        with open(self.student_database, 'r', newline='') as csv_file:
+            reader = csv.reader(csv_file)
+            
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
+            
         id = self.get_input('Enter ID to search')
 
         with open(self.student_database, "r", encoding="utf-8") as f:
@@ -395,6 +438,15 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
         
+        # Check if there are data in the CSV file except the header
+        with open(self.student_database, 'r', newline='') as csv_file:
+            reader = csv.reader(csv_file)
+            
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
+            
         name = self.get_input('Enter name to search')
 
         with open(self.student_database, "r", encoding="utf-8") as f:
@@ -432,6 +484,15 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
         
+        # Check if there are data in the CSV file except the header
+        with open(self.student_database, 'r', newline='') as csv_file:
+            reader = csv.reader(csv_file)
+            
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
+            
         id = self.get_input('Enter ID to update')
 
         with open(self.student_database, "r", encoding="utf-8") as f:
@@ -445,6 +506,8 @@ class MainWindow(QMainWindow):
                     found = True
                     self.display_update_form(student, i)
                     self.update_student_btn.setEnabled(False)
+                    self.add_student_btn.setEnabled(False)
+                    self.delete_student_btn.setEnabled(False)
                     break
 
         if not found:
@@ -483,6 +546,10 @@ class MainWindow(QMainWindow):
         update_button = QPushButton("Update", self.update_widget)
         update_button.clicked.connect(lambda: self.update_student_data(index))
         self.update_widget.layout().addWidget(update_button)
+        
+        back_button = QPushButton("Back", self.update_widget)
+        back_button.clicked.connect(self.erase_update_form)
+        self.update_widget.layout().addWidget(back_button)
 
         self.v_layout.addWidget(self.update_widget) 
     
@@ -535,7 +602,10 @@ class MainWindow(QMainWindow):
             self.v_layout.removeWidget(self.update_widget)
             self.update_widget.deleteLater()
             self.update_widget = None
+            
             self.update_student_btn.setEnabled(True)
+            self.add_student_btn.setEnabled(True)
+            self.delete_student_btn.setEnabled(True)
 
     # 5
     def delete_student(self):
@@ -543,6 +613,15 @@ class MainWindow(QMainWindow):
         if not os.path.exists(self.student_database):
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
+        
+        # Check if there are data in the CSV file except the header
+        with open(self.student_database, 'r', newline='') as csv_file:
+            reader = csv.reader(csv_file)
+            
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
         
         ID = self.get_input('Enter ID of student to delete')
         name = {};
@@ -573,6 +652,15 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
 
+        # Check if there are data in the CSV file except the header
+        with open(self.student_database, 'r', newline='') as csv_file:
+            reader = csv.reader(csv_file)
+            
+            # Check if there are any rows excluding the header
+            if len(list(reader)) <= 1:
+                QMessageBox.warning(self, "Error", "No course has been added yet.")
+                return
+            
         dialog = QDialog(self)
         dialog.setWindowTitle("List of Students")
         dialog.setWindowModality(Qt.WindowModality.WindowModal)
