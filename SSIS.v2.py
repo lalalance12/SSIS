@@ -63,8 +63,7 @@ class MainWindow(QMainWindow):
             ADD FOREIGN KEY (course_code) REFERENCES courses(course_code)
         """)
         self.db.commit()
-           
-            
+                 
         
     def display_menu(self):
         
@@ -151,52 +150,38 @@ class MainWindow(QMainWindow):
 
         if ok2:
             # Check if the course code already exists
-            course_codes = []
-            course_names = []
-            if os.path.exists(self.course_database):
-                with open(self.course_database, newline='') as csvfile:
-                    reader = csv.DictReader(csvfile)
-                    courses = list(reader)
-                    course_codes = [row['Code'] for row in courses]
-                    course_names = [row['Name'] for row in courses]
-
+            self.mycursor.execute("SELECT course_code FROM courses")
+            course_codes = [row[0] for row in self.mycursor.fetchall()]
+            
             if course_code in course_codes:
                 QMessageBox.warning(self, "Error", "A course with the same code already exists!")
-            elif course_name in course_names:
-                QMessageBox.warning(self, "Error", "A course with the same name already exists!")
             elif not course_code:
                 QMessageBox.warning(self, "Error", "Course code cannot be blank!")
             else:
-                self.add_student_btn.setEnabled(True)
-                if not os.path.exists(self.course_database):
-                    with open(self.course_database, 'w', newline='') as csv_file:
-                        writer = csv.writer(csv_file)
-                        writer.writerow(['Name', 'Code'])
-
-                with open(self.course_database, 'a', newline='') as csv_file:
-                    writer = csv.writer(csv_file)
-                    writer.writerow([course_name, course_code])
+                # Insert the course into the courses table
+                insert_query = "INSERT INTO courses (course_code, course) VALUES (%s, %s)"
+                values = (course_code, course_name)
+                self.mycursor.execute(insert_query, values)
+                self.db.commit()
+                
                 QMessageBox.information(self, 'Success', 'Course added successfully!')
         else:
             return
                 
     # B
     def list_course(self):
-        # Check if the CSV file exists
-        if not os.path.exists(self.course_database):
+    
+        # Select all the courses from the courses table
+        self.mycursor.execute("SELECT * FROM courses")
+        courses = self.mycursor.fetchall()
+        
+
+        # Check if there are any courses
+        if len(courses) == 0:
             QMessageBox.warning(self, "Error", "No course has been added yet.")
             return
 
-        
-        with open(self.course_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
-                return
-            
-            
+
         # Create a dialog window to display the list of courses
         dialog = QDialog(self)
         dialog.setWindowTitle("List of Courses")
@@ -205,21 +190,14 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(dialog)
 
         table = QTableWidget(dialog)
-        table.setColumnCount(len(self.course_fields))
-        table.setHorizontalHeaderLabels(self.course_fields)
+        table.setColumnCount(2)  # Assuming there are 2 columns: course_code and course
+        table.setHorizontalHeaderLabels(["Course Code", "Course"])
         table.verticalHeader().setVisible(False)
-
-        with open(self.course_database, newline='') as csvfile:
-            reader = csv.DictReader(csvfile)
-            if set(reader.fieldnames) != set(self.course_fields):
-                QMessageBox.warning(self, "Error", "The headers in the CSV file do not match the expected headers.")
-                return
-            data = [row for row in reader]
-
-        table.setRowCount(len(data))
-        for i, row_data in enumerate(data):
-            for j, field in enumerate(self.course_fields):
-                item = QTableWidgetItem(row_data[field])
+        
+        table.setRowCount(len(courses))
+        for i, course in enumerate(courses):
+            for j in range(2):  # Assuming 2 columns
+                item = QTableWidgetItem(str(course[j]))
                 item.setFlags(item.flags() & Qt.ItemFlag.ItemIsEditable)  # Set cell as read-only
                 table.setItem(i, j, item)
 
@@ -231,112 +209,92 @@ class MainWindow(QMainWindow):
 
     # C
     def update_course(self):
-        # Check if the CSV file exists
-        if not os.path.exists(self.course_database):
+        # Check if any courses exist in the database
+        self.mycursor.execute("SELECT course_code FROM courses")
+        courses = self.mycursor.fetchall()
+        if len(courses) == 0:
             QMessageBox.warning(self, "Error", "No course has been added yet.")
             return
-        
-        with open(self.course_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
+
+        # Fetch the course codes from the database
+        course_codes = [course[0] for course in courses]
+
+        # Prompt the user to select the course code to update
+        course_code, ok = QInputDialog.getItem(self, 'Update Course', 'Select course code:', course_codes)
+        if not ok:
+            return
+
+        # Prompt the user to select the update option
+        options = ['Course Name', 'Course Code']
+        choice, ok = QInputDialog.getItem(self, 'Update Course', 'Select option:', options)
+        if not ok:
+            return
+
+        if choice == 'Course Name':
+            new_course_name, ok = QInputDialog.getText(self, 'Update Course', 'Enter new course name:')
+            if not ok:
                 return
-            csv_file.seek(0)  # Reset file pointer to the beginning
-            
-            
-            next(reader)
-            courses = [row[1] for row in reader]
 
-        course_code, ok = QInputDialog.getItem(self, 'Update Course', 'Select course code:', courses)
-        if ok:
-            options = ['Course Name', 'Course Code']
-            choice, ok = QInputDialog.getItem(self, 'Update Course', 'Select option:', options)
-            if ok:
-                if choice == 'Course Name':
-                    new_course_name, ok = QInputDialog.getText(self, 'Update Course', 'Enter new course name:')
-                    if ok:
-                        # Check for duplicates
-                        with open(self.course_database, 'r', newline='') as csv_file:
-                            reader = csv.DictReader(csv_file)
-                            for row in reader:
-                                if row['Name'] == new_course_name:
-                                    QMessageBox.warning(self, 'Error', 'The course name is already taken.')
-                                    return
+            # Check for duplicates
+            self.mycursor.execute("SELECT * FROM courses WHERE course = %s", (new_course_name,))
+            duplicate_course = self.mycursor.fetchone()
+            if duplicate_course:
+                QMessageBox.warning(self, 'Error', 'The course name is already taken.')
+                return
 
-                        # Check for blank input
-                        if not new_course_name:
-                            QMessageBox.warning(self, 'Error', 'Please enter a course name.')
-                            return
+            # Check for blank input
+            if not new_course_name:
+                QMessageBox.warning(self, 'Error', 'Please enter a course name.')
+                return
 
-                        with open(self.course_database, 'r', newline='') as csv_file:
-                            reader = csv.reader(csv_file)
-                            rows = list(reader)
-                        with open(self.course_database, 'w', newline='') as csv_file:
-                            writer = csv.writer(csv_file)
-                            for row in rows:
-                                if row[1] == course_code:
-                                    row[0] = new_course_name
-                                writer.writerow(row)
-                        QMessageBox.information(self, 'Success', 'Course name updated successfully!')
+            # Update the course name in the database
+            self.mycursor.execute("UPDATE courses SET course = %s WHERE course_code = %s", (new_course_name, course_code))
+            self.db.commit()
+            QMessageBox.information(self, 'Success', 'Course name updated successfully!')
 
-                elif choice == 'Course Code':
-                    new_course_code, ok = QInputDialog.getText(self, 'Update Course', 'Enter new course code:')
-                    if ok:
-                        # Check for duplicates
-                        with open(self.course_database, 'r', newline='') as csv_file:
-                            reader = csv.DictReader(csv_file)
-                            for row in reader:
-                                if row['Code'] == new_course_code:
-                                    QMessageBox.warning(self, 'Error', 'The course code is already taken.')
-                                    return
+        elif choice == 'Course Code':
+            new_course_code, ok = QInputDialog.getText(self, 'Update Course', 'Enter new course code:')
+            if not ok:
+                return
 
-                        # Check for blank input
-                        if not new_course_code:
-                            QMessageBox.warning(self, 'Error', 'Please enter a course code.')
-                            return
+            # Check for duplicates
+            self.mycursor.execute("SELECT * FROM courses WHERE course_code = %s", (new_course_code,))
+            duplicate_course = self.mycursor.fetchone()
+            if duplicate_course:
+                QMessageBox.warning(self, 'Error', 'The course code is already taken.')
+                return
 
-                        with open(self.course_database, 'r', newline='') as csv_file:
-                            reader = csv.reader(csv_file)
-                            rows = list(reader)
-                        with open(self.course_database, 'w', newline='') as csv_file:
-                            writer = csv.writer(csv_file)
-                            for row in rows:
-                                if row[1] == course_code:
-                                    row[1] = new_course_code
-                                writer.writerow(row)
-                        QMessageBox.information(self, 'Success', 'Course code updated successfully!')
+            # Check for blank input
+            if not new_course_code:
+                QMessageBox.warning(self, 'Error', 'Please enter a course code.')
+                return
+
+            # Update the course code in the database
+            self.mycursor.execute("UPDATE courses SET course_code = %s WHERE course_code = %s", (new_course_code, course_code))
+            self.db.commit()
+            QMessageBox.information(self, 'Success', 'Course code updated successfully!')
                                            
     # D
     def delete_course(self):
-        # Check if the CSV file exists
-        if not os.path.exists(self.course_database):
+        # Check if any courses exist in the database
+        self.mycursor.execute("SELECT course_code FROM courses")
+        courses = self.mycursor.fetchall()
+        if len(courses) == 0:
             QMessageBox.warning(self, "Error", "No course has been added yet.")
             return
 
-        with open(self.course_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
-                return
-            csv_file.seek(0)  # Reset file pointer to the beginning
+        # Fetch the course codes from the database
+        course_codes = [course[0] for course in courses]
 
-            next(reader)
-            courses = [row[1] for row in reader]
+        # Prompt the user to select the course code to delete
+        course_code, ok = QInputDialog.getItem(self, 'Delete Course', 'Select course code:', course_codes)
+        if not ok:
+            return
 
-        course_code, ok = QInputDialog.getItem(self, 'Delete Course', 'Select course code:', courses)
-        if ok:
-            with open(self.course_database, 'r', newline='') as csv_file:
-                reader = csv.reader(csv_file)
-                rows = list(reader)
-            with open(self.course_database, 'w', newline='') as csv_file:
-                writer = csv.writer(csv_file)
-                for row in rows:
-                    if row[1] != course_code:
-                        writer.writerow(row)
-            QMessageBox.information(self, 'Success', 'Course deleted successfully!')
+        # Delete the course from the database
+        self.mycursor.execute("DELETE FROM courses WHERE course_code = %s", (course_code,))
+        self.db.commit()
+        QMessageBox.information(self, 'Success', 'Course deleted successfully!')
     
     
     
