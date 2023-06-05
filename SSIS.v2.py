@@ -1,4 +1,3 @@
-
 import sys
 import mysql.connector
 
@@ -535,7 +534,9 @@ class MainWindow(QMainWindow):
 
         self.input_widgets = []
         self.student_fields = ['Student ID', 'Student Name', 'Gender', 'Year Level', 'Course Code']
-        for field, value in zip(self.student_fields, student):
+        db_field_names = ['student_id', 'name', 'gender', 'year_level', 'course_code']
+
+        for field, db_field, value in zip(self.student_fields, db_field_names, student):
             h_layout = QHBoxLayout()
             label = QLabel(field, self.update_widget)
 
@@ -589,18 +590,9 @@ class MainWindow(QMainWindow):
         if existing_students and student_id != existing_students[0][0]:
             QMessageBox.warning(self, "Error", "A student with the same ID already exists!")
             return
-        # Update student data in the database
-        update_query = "UPDATE students SET student_id = %s, name = %s, gender = %s, year_level = %s, course_code = %s WHERE student_id = %s"
-        values = (student_data[0], student_data[1], student_data[2], student_data[3], student_data[4], student_id)
         
-        # Create a new cursor for executing the update query
-        update_cursor = self.db.cursor()
-        update_cursor.execute(update_query, values)
-        self.db.commit()
-
-        QMessageBox.information(self, "Success", "Data updated successfully")
-        self.erase_update_form()
         
+            
     # 4.C
     def erase_update_form(self):
         if self.update_widget:
@@ -610,41 +602,22 @@ class MainWindow(QMainWindow):
 
     # 5
     def delete_student(self):
-        # Check if the CSV file exists
-        if not os.path.exists(self.student_database):
-            QMessageBox.warning(self, "Error", "No student has been added yet.")
+        id = self.get_input('Enter ID of student to delete')
+
+        # Check if the student with the given ID exists
+        query = "SELECT * FROM students WHERE student_id = %s"
+        self.mycursor.execute(query, (id,))
+        existing_student = self.mycursor.fetchone()
+        if not existing_student:
+            self.show_message_box(f'Student with ID {id} not found in the database')
             return
-        
-        # Check if there are data in the CSV file except the header
-        with open(self.student_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
-                return
-        
-        ID = self.get_input('Enter ID of student to delete')
-        name = {};
-        
-        with open(self.student_database, 'r') as f:
-            students = list(csv.reader(f))
 
-        found = False
-        for i, student in enumerate(students):
-            if len(student) > 0 and student[1] == ID:
-                name = student[0]
-                found = True
-                break
+        # Delete the student from the database
+        delete_query = "DELETE FROM students WHERE student_id = %s"
+        self.mycursor.execute(delete_query, (id,))
+        self.db.commit()
 
-        if found:
-                students.pop(i)
-                with open(self.student_database, 'w', newline='') as f:
-                    writer = csv.writer(f)
-                    writer.writerows(students)
-                self.show_message_box(f'( {name} | {ID} ) student information has been deleted successfully')
-        else:
-            self.show_message_box(f'Student with ID {ID} not found in the database')
+        self.show_message_box(f'Student with ID {id} has been deleted successfully')
     
     # 6        
     def list_students(self):
