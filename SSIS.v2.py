@@ -1,7 +1,5 @@
-import csv
-import sys
-import os.path
 
+import sys
 import mysql.connector
 
 from PyQt6.QtWidgets import QApplication, QAbstractScrollArea, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QInputDialog, QComboBox, QDialog
@@ -49,20 +47,16 @@ class MainWindow(QMainWindow):
     def create_student_table(self):
         self.mycursor.execute("""
             CREATE TABLE IF NOT EXISTS students (
-                student_id INT NOT NULL PRIMARY KEY,
+                student_id VARCHAR(50) NOT NULL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 gender VARCHAR(6) NOT NULL,
-                year_level INT NOT NULL,
-                course_code VARCHAR(10)
+                year_level VARCHAR(10) NOT NULL,
+                course_code VARCHAR(10),
+                FOREIGN KEY (course_code) REFERENCES courses(course_code)
             )
         """)
         self.db.commit()
         
-        self.mycursor.execute("""
-            ALTER TABLE students
-            ADD FOREIGN KEY (course_code) REFERENCES courses(course_code)
-        """)
-        self.db.commit()
                  
         
     def display_menu(self):
@@ -133,12 +127,14 @@ class MainWindow(QMainWindow):
         
         self.v_layout.addLayout(main_layout)
         
-    #0.1
+    # 0.1
+    def enable_add_student_button(self):
+        self.add_student_btn.setEnabled(True) 
+           
+    # 0.2
     def disable_add_student_button(self):
         self.add_student_btn.setEnabled(False)
-    #0.2
-    def enable_add_student_button(self):
-        self.add_student_btn.setEnabled(True)
+   
     
     # A
     def add_course(self):
@@ -165,6 +161,7 @@ class MainWindow(QMainWindow):
                 self.db.commit()
                 
                 QMessageBox.information(self, 'Success', 'Course added successfully!')
+                self.enable_add_student_button()
         else:
             return
                 
@@ -302,18 +299,13 @@ class MainWindow(QMainWindow):
     # 1    
     def add_student(self):
         
-        if not os.path.exists('Course Information.csv'):
+        # Check if any courses exist in the database
+        self.mycursor.execute("SELECT course_code FROM courses")
+        courses = self.mycursor.fetchall()
+        if len(courses) == 0:
             QMessageBox.warning(self, "Error", "No courses added yet!")
             return
-        
-        with open(self.course_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
-                return
-        
-        
+
         self.add_widget = QWidget()
         self.add_layout = QVBoxLayout(self.add_widget)
 
@@ -322,36 +314,74 @@ class MainWindow(QMainWindow):
         self.add_layout.addWidget(self.add_label)
 
         self.input_widgets = []
-        for field in self.student_fields:
-            h_layout = QHBoxLayout()
-            label = QLabel(field, self.add_widget)
-            if field == 'Course Code':
-                combo_box = QComboBox(self.add_widget)
-                with open('Course Information.csv', newline='', encoding='utf-8') as f:
-                    reader = csv.reader(f)
-                    next(reader)
-                    courses = [row[1] for row in reader]
-                combo_box.addItems(courses)
-                h_layout.addWidget(label)
-                h_layout.addWidget(combo_box)
-                self.input_widgets.append(combo_box)
-            else:
-                line_edit = QLineEdit(self.add_widget)
-                h_layout.addWidget(label)
-                h_layout.addWidget(line_edit)
-                self.input_widgets.append(line_edit)
-            self.add_layout.addLayout(h_layout)
         
-        self.submit_btn = QPushButton("Submit", self.add_widget)
+        # Create a QVBoxLayout to organize the fields vertically
+        self.input_layout = QVBoxLayout()
+
+        # Add Student ID field
+        id_layout = QHBoxLayout()
+        id_label = QLabel("Student ID:")
+        id_line_edit = QLineEdit()
+        id_line_edit.setPlaceholderText("xxxx-xxxx")  # Example text as a placeholder
+        id_layout.addWidget(id_label)
+        id_layout.addWidget(id_line_edit)
+        self.input_widgets.append(id_line_edit)
+        self.input_layout.addLayout(id_layout)
+
+        # Add Student Name field
+        name_layout = QHBoxLayout()
+        name_label = QLabel("Student Name:")
+        name_line_edit = QLineEdit()
+        name_line_edit.setPlaceholderText("First name, Middle Initial, Last Name")  # Example text as a placeholder
+        name_layout.addWidget(name_label)
+        name_layout.addWidget(name_line_edit)
+        self.input_widgets.append(name_line_edit)
+        self.input_layout.addLayout(name_layout)
+
+        # Add Gender field
+        gender_layout = QHBoxLayout()
+        gender_label = QLabel("Gender:")
+        gender_line_edit = QLineEdit()
+        gender_layout.addWidget(gender_label)
+        gender_layout.addWidget(gender_line_edit)
+        self.input_widgets.append(gender_line_edit)
+        self.input_layout.addLayout(gender_layout)
+
+        # Add Year Level field
+        year_layout = QHBoxLayout()
+        year_label = QLabel("Year Level:")
+        year_line_edit = QLineEdit()
+        year_line_edit.setPlaceholderText("xxx year")  # Example text as a placeholder
+        year_layout.addWidget(year_label)
+        year_layout.addWidget(year_line_edit)
+        self.input_widgets.append(year_line_edit)
+        self.input_layout.addLayout(year_layout)
+
+        # Add Course Code field
+        course_layout = QHBoxLayout()
+        course_label = QLabel("Course Code:")
+        combo_box = QComboBox()
+        combo_box.addItems([course[0] for course in courses])
+        course_layout.addWidget(course_label)
+        course_layout.addWidget(combo_box)
+        self.input_widgets.append(combo_box)
+        self.input_layout.addLayout(course_layout)
+
+       # Add Submit and Back buttons
+        button_layout = QHBoxLayout()
+        self.submit_btn = QPushButton("Submit")
         self.submit_btn.clicked.connect(self.save_student)
-        self.add_layout.addWidget(self.submit_btn)
-        
-        self.back_btn = QPushButton("Back", self.add_widget)
+        button_layout.addWidget(self.submit_btn)
+        self.back_btn = QPushButton("Back")
         self.back_btn.clicked.connect(self.delete_form)
-        self.add_layout.addWidget(self.back_btn)
-        
+        button_layout.addWidget(self.back_btn)
+
+        self.input_layout.addLayout(button_layout)
+        self.add_layout.addLayout(self.input_layout)
+
         self.enable_add_student_button()
-        self.update_student_btn.setEnabled(True)
+        self.update_student_btn.setEnabled(False)
+        self.delete_student_btn.setEnabled(False)
 
         self.v_layout.addWidget(self.add_widget)
         
@@ -359,8 +389,17 @@ class MainWindow(QMainWindow):
     def delete_form(self):
         self.v_layout.removeWidget(self.add_widget)
         self.add_widget.deleteLater()
-        self.enable_add_student_button()   
-         
+        self.enable_add_student_button()
+        
+        self.update_student_btn.setEnabled(True)
+        self.delete_student_btn.setEnabled(True)
+
+        # Clear the input fields
+        for widget in self.input_widgets:
+            widget.clear()
+
+
+        
     # 1.B
     def save_student(self):
         student_data = []
@@ -371,94 +410,81 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "Please fill in all fields!")
                 return
             student_data.append(data)
-            
-        
-        header = ['Name', 'ID', 'Course Code']
-        file_exists = os.path.isfile('Students Information.csv')
 
-        if file_exists:
-            # Check if student with same name or ID already exists
-            with open('Students Information.csv', "r", encoding="utf-8", newline='') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    if row['Name'] == student_data[0] and row['ID'] == student_data[1]:
-                        QMessageBox.warning(self, "Error", "A student with the same name and ID already exists!")
-                        return
-                    elif row['Name'] == student_data[0]:
-                        QMessageBox.warning(self, "Error", "A student with the same name already exists!")
-                        return
-                    elif row['ID'] == student_data[1]:
-                        QMessageBox.warning(self, "Error", "A student with the same ID already exists!")
-                        return
+        # Validate student ID length
+        max_id_length = 50
+        student_id = str(student_data[0]).strip()
+        if len(student_id) > max_id_length:
+            QMessageBox.warning(self, "Error", f"Student ID should not exceed {max_id_length} characters!")
+            return
 
-        # Add new student to CSV file
-        with open('Students Information.csv', "a", encoding="utf-8", newline='') as f:
-            writer = csv.writer(f)
-            if not file_exists:
-                writer.writerow(header)
-            writer.writerow(student_data)
+        # Check if student with the same student_id already exists
+        query = "SELECT * FROM students WHERE student_id = %s"
+        self.mycursor.execute(query, (student_id,))
+        existing_students = self.mycursor.fetchall()
+        if existing_students:
+            QMessageBox.warning(self, "Error", "A student with the same ID already exists!")
+            return
 
+        # Insert new student into the database
+        insert_query = "INSERT INTO students (student_id, name, gender, year_level, course_code) VALUES (%s, %s, %s, %s, %s)"
+        values = (student_id, student_data[1], student_data[2], student_data[3], student_data[4])
+        self.mycursor.execute(insert_query, values)
+        self.db.commit()
         QMessageBox.information(self, "Success!", "Student information saved successfully")
+        self.enable_add_student_button()
+        self.v_layout.removeWidget(self.add_widget)
+        self.add_widget.deleteLater()
+
         self.enable_add_student_button()
 
         self.v_layout.removeWidget(self.add_widget)
         self.add_widget.deleteLater()
+     
        
     # 2
     def search_ID_student(self):
-        # Check if the CSV file exists
-        if not os.path.exists(self.student_database):
+        
+        # Check if the students table exists
+        query = "SHOW TABLES LIKE 'students'"
+        self.mycursor.execute(query)
+        table_exists = self.mycursor.fetchone()
+        if not table_exists:
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
-        
-        # Check if there are data in the CSV file except the header
-        with open(self.student_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
-                return
-            
-        id = self.get_input('Enter ID to search')
 
-        with open(self.student_database, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) > 0:
-                    if id == row[1]:
-                        self.show_student_info(row)
-                        break
-            else:
-                self.show_message_box('ID not found in our database')
+        student_id = self.get_input('Enter ID to search')
+
+        query = "SELECT * FROM students WHERE student_id = %s"
+        self.mycursor.execute(query, (student_id,))
+        student_data = self.mycursor.fetchone()
+
+        if student_data:
+            self.show_student_info(student_data)
+        else:
+            self.show_message_box('ID not found in our database')
 
     # 3
     def search_name_student(self):
-        # Check if the CSV file exists
-        if not os.path.exists(self.student_database):
+        
+        # Check if the students table exists
+        query = "SHOW TABLES LIKE 'students'"
+        self.mycursor.execute(query)
+        table_exists = self.mycursor.fetchone()
+        if not table_exists:
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
-        
-        # Check if there are data in the CSV file except the header
-        with open(self.student_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
-                return
-            
+
         name = self.get_input('Enter name to search')
 
-        with open(self.student_database, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if len(row) > 0:
-                    if name == row[0]:
-                        self.show_student_info(row)
-                        break
-            else:
-                self.show_message_box('Name not found in our database')
+        query = "SELECT * FROM students WHERE name = %s"
+        self.mycursor.execute(query, (name,))
+        student_data = self.mycursor.fetchone()
+
+        if student_data:
+            self.show_student_info(student_data)
+        else:
+            self.show_message_box('Name not found in our database')
     
     # 3&4.A    
     def get_input(self, message):
@@ -468,7 +494,7 @@ class MainWindow(QMainWindow):
     
     # 3&4.B 
     def show_student_info(self, student):
-        info = f"Name: {student[0]}\nID: {student[1]}\nCourse Code: {student[2]}"
+        info = f"Name: {student[1]}\nID: {student[0]}\nGender: {student[2]}\nYear Level: {student[3]}\nCourse Code: {student[4]}"
         self.show_message_box(info)
 
     # 3&4.C
@@ -480,57 +506,42 @@ class MainWindow(QMainWindow):
 
     # 4
     def update_student(self):
-        # Check if the CSV file exists
-        if not os.path.exists(self.student_database):
-            QMessageBox.warning(self, "Error", "No student has been added yet.")
+        # Check if any courses exist in the database
+        self.mycursor.execute("SELECT course_code FROM courses")
+        courses = self.mycursor.fetchall()
+        if len(courses) == 0:
+            QMessageBox.warning(self, "Error", "No courses added yet!")
             return
-        
-        # Check if there are data in the CSV file except the header
-        with open(self.student_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
+
+        id, ok = QInputDialog.getText(self, "Update Student", "Enter ID to update")
+        if ok:
+            # Check if the student with the given ID exists
+            query = "SELECT * FROM students WHERE student_id = %s"
+            self.mycursor.execute(query, (id,))
+            existing_student = self.mycursor.fetchone()
+            if not existing_student:
+                QMessageBox.warning(self, "Error", "ID not found in our database")
                 return
-            
-        id = self.get_input('Enter ID to update')
 
-        with open(self.student_database, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            students = list(reader)
-
-        found = False
-        for i, student in enumerate(students):
-            if len(student) > 0:
-                if id == student[1]:
-                    found = True
-                    self.display_update_form(student, i)
-                    self.update_student_btn.setEnabled(False)
-                    self.add_student_btn.setEnabled(False)
-                    self.delete_student_btn.setEnabled(False)
-                    break
-
-        if not found:
-            self.show_message_box('ID not found in our database')
+            self.display_update_form(existing_student)
 
     # 4.A
-    def display_update_form(self, student, index):
-        self.update_widget = QWidget(self)
-        self.update_widget.setLayout(QVBoxLayout())
+    def display_update_form(self, student):
+        self.update_widget = QWidget()
+        self.update_layout = QVBoxLayout(self.update_widget)
+
+        self.mycursor.execute("SELECT course_code FROM courses")
+        courses = self.mycursor.fetchall()
 
         self.input_widgets = []
+        self.student_fields = ['Student ID', 'Student Name', 'Gender', 'Year Level', 'Course Code']
         for field, value in zip(self.student_fields, student):
             h_layout = QHBoxLayout()
             label = QLabel(field, self.update_widget)
 
             if field == 'Course Code':
                 combo_box = QComboBox(self.update_widget)
-                with open('Course Information.csv', newline='', encoding='utf-8') as f:
-                    reader = csv.reader(f)
-                    next(reader)
-                    courses = [row[1] for row in reader]
-                combo_box.addItems(courses)
+                combo_box.addItems([course[0] for course in courses])
                 combo_box.setCurrentText(value)
                 h_layout.addWidget(label)
                 h_layout.addWidget(combo_box)
@@ -542,71 +553,60 @@ class MainWindow(QMainWindow):
                 h_layout.addWidget(line_edit)
                 self.input_widgets.append(line_edit)
 
-            self.update_widget.layout().addLayout(h_layout)
+            self.update_layout.addLayout(h_layout)
 
         update_button = QPushButton("Update", self.update_widget)
-        update_button.clicked.connect(lambda: self.update_student_data(index))
-        self.update_widget.layout().addWidget(update_button)
-        
+        update_button.clicked.connect(self.update_student_data)
+        self.update_layout.addWidget(update_button)
+
         back_button = QPushButton("Back", self.update_widget)
         back_button.clicked.connect(self.erase_update_form)
-        self.update_widget.layout().addWidget(back_button)
+        self.update_layout.addWidget(back_button)
 
-        self.v_layout.addWidget(self.update_widget) 
-    
+        self.v_layout.addWidget(self.update_widget)
+
     # 4.B
-    def update_student_data(self, index):
+    def update_student_data(self):
         student_data = []
         for widget in self.input_widgets:
-            if isinstance(widget, QComboBox):
-                student_data.append(widget.currentText())
-            else:
-                student_data.append(widget.text())
+            data = widget.currentText() if isinstance(widget, QComboBox) else widget.text()
+            if not data:
+                QMessageBox.warning(self, "Error", "Please fill in all fields!")
+                return
+            student_data.append(data)
 
-        if any(not data for data in student_data):
-            QMessageBox.warning(self, "Error", "Please fill in all fields")
+        # Validate student ID length
+        max_id_length = 50
+        student_id = str(student_data[0]).strip()
+        if len(student_id) > max_id_length:
+            QMessageBox.warning(self, "Error", f"Student ID should not exceed {max_id_length} characters!")
             return
 
-        with open('Students Information.csv', "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row['ID'] != student_data[1] and row['Name'] != student_data[0]:
-                    if row['Name'] == student_data[0] and row['ID'] == student_data[1]:
-                        QMessageBox.warning(self, "Error", "A student with the same name and ID already exists!")
-                        return
-                    elif row['Name'] == student_data[0]:
-                        QMessageBox.warning(self, "Error", "A student with the same name already exists!")
-                        return
-                    elif row['ID'] == student_data[1]:
-                        QMessageBox.warning(self, "Error", "A student with the same ID already exists!")
-                        return
-                    elif row['ID'] == student_data[1] and row['Name'] == student_data[0]:
-                        continue
-    
-
-        with open('Students Information.csv', "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            students = list(reader)
-
-        students[index] = student_data
-
-        with open('Students Information.csv', "w", encoding="utf-8", newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(students)
+        # Check if a student with the same student_id already exists
+        query = "SELECT * FROM students WHERE student_id = %s"
+        self.mycursor.execute(query, (student_id,))
+        existing_students = self.mycursor.fetchall()
+        if existing_students and student_id != existing_students[0][0]:
+            QMessageBox.warning(self, "Error", "A student with the same ID already exists!")
+            return
+        # Update student data in the database
+        update_query = "UPDATE students SET student_id = %s, name = %s, gender = %s, year_level = %s, course_code = %s WHERE student_id = %s"
+        values = (student_data[0], student_data[1], student_data[2], student_data[3], student_data[4], student_id)
+        
+        # Create a new cursor for executing the update query
+        update_cursor = self.db.cursor()
+        update_cursor.execute(update_query, values)
+        self.db.commit()
 
         QMessageBox.information(self, "Success", "Data updated successfully")
         self.erase_update_form()
         
-    # 4.C    
+    # 4.C
     def erase_update_form(self):
         if self.update_widget:
             self.v_layout.removeWidget(self.update_widget)
             self.update_widget.deleteLater()
             self.update_widget = None
-            
-            self.update_student_btn.setEnabled(True)
-            self.add_student_btn.setEnabled(True)
-            self.delete_student_btn.setEnabled(True)
 
     # 5
     def delete_student(self):
@@ -648,20 +648,16 @@ class MainWindow(QMainWindow):
     
     # 6        
     def list_students(self):
-        # Check if the CSV file exists
-        if not os.path.exists(self.student_database):
-            QMessageBox.warning(self, "Error", "No student has been added yet.")
+        # Select all the students from the students table
+        self.mycursor.execute("SELECT * FROM students")
+        students = self.mycursor.fetchall()
+
+        # Check if there are any students 
+        if len(students) == 0:
+            QMessageBox.warning(self, "Error", "No students have been added yet.")
             return
 
-        # Check if there are data in the CSV file except the header
-        with open(self.student_database, 'r', newline='') as csv_file:
-            reader = csv.reader(csv_file)
-            
-            # Check if there are any rows excluding the header
-            if len(list(reader)) <= 1:
-                QMessageBox.warning(self, "Error", "No course has been added yet.")
-                return
-            
+        # Create a dialog window to display the list of students
         dialog = QDialog(self)
         dialog.setWindowTitle("List of Students")
         dialog.setWindowModality(Qt.WindowModality.WindowModal)
@@ -669,23 +665,17 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(dialog)
 
         table = QTableWidget(dialog)
-        table.setColumnCount(len(self.student_fields))
-        table.setHorizontalHeaderLabels(self.student_fields)
+        table.setColumnCount(5)  # Number of fields
+        table.setHorizontalHeaderLabels(["Student ID", "Name", "Gender", "Year Level", "Course Code"])
         table.verticalHeader().setVisible(False)
 
-        with open(self.student_database, newline='') as csvfile:
-            reader = csv.DictReader(csvfile)
-            if set(reader.fieldnames) != set(self.student_fields):
-                QMessageBox.warning(self, "Error", "The headers in the CSV file do not match the expected headers.")
-                return
-            data = [row for row in reader]
-
-        table.setRowCount(len(data))
-        for i, row_data in enumerate(data):
-            for j, field in enumerate(self.student_fields):
-                item = QTableWidgetItem(row_data[field])
+        table.setRowCount(len(students))
+        for i, row_data in enumerate(students):
+            for j, value in enumerate(row_data):
+                item = QTableWidgetItem(str(value))
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)  # Set cell as read-only
                 table.setItem(i, j, item)
+
 
         table.resizeColumnsToContents()  # Adjust column widths
         table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)  # Adjust cell sizes to content
