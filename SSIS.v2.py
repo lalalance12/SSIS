@@ -36,8 +36,8 @@ class MainWindow(QMainWindow):
     def create_course_table(self):
         self.mycursor.execute("""
              CREATE TABLE IF NOT EXISTS courses (
-                course_code VARCHAR(10) NOT NULL PRIMARY KEY,
-                course VARCHAR(255) NOT NULL
+                course_code VARCHAR(20) NOT NULL PRIMARY KEY,
+                course VARCHAR(100) NOT NULL
             )
         """)
         self.db.commit()
@@ -512,15 +512,19 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "No courses added yet!")
             return
 
-        id, ok = QInputDialog.getText(self, "Update Student", "Enter ID to update")
+        self.id, ok = QInputDialog.getText(self, "Update Student", "Enter ID to update")
         if ok:
             # Check if the student with the given ID exists
             query = "SELECT * FROM students WHERE student_id = %s"
-            self.mycursor.execute(query, (id,))
+            self.mycursor.execute(query, (self.id,))
             existing_student = self.mycursor.fetchone()
             if not existing_student:
                 QMessageBox.warning(self, "Error", "ID not found in our database")
                 return
+            
+            self.add_student_btn.setDisabled(True)
+            self.update_student_btn.setDisabled(True)
+            self.delete_student_btn.setDisabled(True)
 
             self.display_update_form(existing_student)
 
@@ -575,7 +579,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "Please fill in all fields!")
                 return
             student_data.append(data)
-
+        
         # Validate student ID length
         max_id_length = 50
         student_id = str(student_data[0]).strip()
@@ -591,14 +595,25 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "A student with the same ID already exists!")
             return
         
+        # Update the students from the database
+        update_query = "UPDATE students SET student_id = %s, name = %s , gender = %s, year_level = %s, course_code = %s WHERE student_id = %s"
+        values = (student_data[0], student_data[1], student_data[2], student_data[3], student_data[4], self.id )
+        self.mycursor.execute(update_query, values)
+        self.db.commit()
         
-            
+        self.show_message_box(f'Student with ID {self.id} has been updated successfully')
+        self.erase_update_form()
+        
     # 4.C
     def erase_update_form(self):
         if self.update_widget:
             self.v_layout.removeWidget(self.update_widget)
             self.update_widget.deleteLater()
             self.update_widget = None
+            
+        self.add_student_btn.setEnabled(True)
+        self.update_student_btn.setEnabled(True)
+        self.delete_student_btn.setEnabled(True)
 
     # 5
     def delete_student(self):
