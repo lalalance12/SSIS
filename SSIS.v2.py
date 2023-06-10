@@ -205,7 +205,7 @@ class MainWindow(QMainWindow):
 
     # C
     def update_course(self):
-        # Check if any courses exist in the database
+         # Check if any courses exist in the database
         self.mycursor.execute("SELECT course_code FROM courses")
         courses = self.mycursor.fetchall()
         if len(courses) == 0:
@@ -216,13 +216,13 @@ class MainWindow(QMainWindow):
         course_codes = [course[0] for course in courses]
 
         # Prompt the user to select the course code to update
-        course_code, ok = QInputDialog.getItem(self, 'Update Course', 'Select course code:', course_codes)
+        course_code, ok = QInputDialog.getItem(self, 'Update Course', 'Select course code:', course_codes, editable=False)
         if not ok:
             return
 
         # Prompt the user to select the update option
         options = ['Course Name', 'Course Code']
-        choice, ok = QInputDialog.getItem(self, 'Update Course', 'Select option:', options)
+        choice, ok = QInputDialog.getItem(self, 'Update Course', 'Select option:', options, editable=False)
         if not ok:
             return
 
@@ -283,7 +283,7 @@ class MainWindow(QMainWindow):
         course_codes = [course[0] for course in courses]
 
         # Prompt the user to select the course code to delete
-        course_code, ok = QInputDialog.getItem(self, 'Delete Course', 'Select course code:', course_codes)
+        course_code, ok = QInputDialog.getItem(self, 'Delete Course', 'Select course code:', course_codes, editable=False)
         if not ok:
             return
 
