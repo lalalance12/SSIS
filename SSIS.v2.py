@@ -3,7 +3,6 @@ import mysql.connector
 
 from PyQt6.QtWidgets import QApplication, QAbstractScrollArea, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QInputDialog, QComboBox, QDialog
 from PyQt6.QtCore import Qt
-from PyQt6 import QtCore
 
 
 
@@ -32,7 +31,7 @@ class MainWindow(QMainWindow):
         
         self.display_menu()
         
-    # DB1
+    # Course Table
     def create_course_table(self):
         self.mycursor.execute("""
              CREATE TABLE IF NOT EXISTS courses (
@@ -42,7 +41,7 @@ class MainWindow(QMainWindow):
         """)
         self.db.commit()
         
-    # DB2
+    # Student Table
     def create_student_table(self):
         self.mycursor.execute("""
             CREATE TABLE IF NOT EXISTS students (
@@ -54,9 +53,7 @@ class MainWindow(QMainWindow):
                 FOREIGN KEY (course_code) REFERENCES courses(course_code)
             )
         """)
-        self.db.commit()
-        
-                 
+        self.db.commit()            
         
     def display_menu(self):
         
@@ -133,14 +130,17 @@ class MainWindow(QMainWindow):
     # 0.2
     def disable_add_student_button(self):
         self.add_student_btn.setEnabled(False)
-   
     
     # A
     def add_course(self):
         course_name, ok1 = QInputDialog.getText(self, 'Course Name', 'Enter course name:')
         if not ok1:
             return
-
+        
+        if course_name.strip() == "":
+            QMessageBox.warning(self, 'Warning', 'Course name should not be blank.')
+            return
+        
         course_code, ok2 = QInputDialog.getText(self, 'Course Code', 'Enter course code:')
 
         if ok2:
@@ -472,7 +472,7 @@ class MainWindow(QMainWindow):
         self.update_student_btn.setEnabled(True)
         self.delete_student_btn.setEnabled(True)
         self.list_student_btn.setEnabled(True)
-
+    
         self.v_layout.removeWidget(self.add_widget)
         self.add_widget.deleteLater()
      
@@ -755,7 +755,6 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(table)
         dialog.exec()
-        
         
 if __name__ == '__main__':
     import sys
