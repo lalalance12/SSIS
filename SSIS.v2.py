@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
             CREATE TABLE IF NOT EXISTS students (
                 student_id VARCHAR(50) NOT NULL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                gender VARCHAR(6) NOT NULL,
+                gender VARCHAR(10) NOT NULL,
                 year_level VARCHAR(10) NOT NULL,
                 course_code VARCHAR(10),
                 FOREIGN KEY (course_code) REFERENCES courses(course_code)
@@ -63,12 +63,13 @@ class MainWindow(QMainWindow):
             "color: rgb(255, 255, 255);"  # Text color (white)
             "background-color: rgb(0, 0, 100);"  # Background color (indigo)
             "font-size: 30px;"  # Font size
-            "font-weight: bold;"  # Font weight (bold)
-            "font-family: 'Arial', sans-serif;"  # Font family
+            "font-weight: bold;"  # Font weight
+            "font-family: 'Arial', sans-serif;"  # Font Style
         )
 
         # First column
         column1_layout = QVBoxLayout()
+        
         self.add_course_btn = QPushButton("Add Course", self)
         self.add_course_btn.clicked.connect(self.add_course)
         column1_layout.addWidget(self.add_course_btn)
@@ -87,12 +88,11 @@ class MainWindow(QMainWindow):
         
         # Second column
         column2_layout = QVBoxLayout()
+        
         self.add_student_btn = QPushButton("Add Student", self)
         self.add_student_btn.clicked.connect(self.add_student)
         column2_layout.addWidget(self.add_student_btn)
-        
-        self.add_student_btn.clicked.connect(self.disable_add_student_button) 
-
+         
         self.search_id_btn = QPushButton("Search Student by ID", self)
         self.search_id_btn.clicked.connect(self.search_ID_student)
         column2_layout.addWidget(self.search_id_btn)
@@ -122,17 +122,11 @@ class MainWindow(QMainWindow):
         sub_layout.addLayout(column2_layout)
         
         self.v_layout.addLayout(main_layout)
-        
-    # 0.1
-    def enable_add_student_button(self):
-        self.add_student_btn.setEnabled(True) 
-           
-    # 0.2
-    def disable_add_student_button(self):
-        self.add_student_btn.setEnabled(False)
     
     # A
     def add_course(self):
+        
+        # Getting input
         course_name, ok1 = QInputDialog.getText(self, 'Course Name', 'Enter course name:')
         if not ok1:
             return
@@ -142,7 +136,6 @@ class MainWindow(QMainWindow):
             return
         
         course_code, ok2 = QInputDialog.getText(self, 'Course Code', 'Enter course code:')
-
         if ok2:
             # Check if the course code already exists
             self.mycursor.execute("SELECT course_code FROM courses")
@@ -160,7 +153,6 @@ class MainWindow(QMainWindow):
                 self.db.commit()
                 
                 QMessageBox.information(self, 'Success', 'Course added successfully!')
-                self.enable_add_student_button()
         else:
             return
                 
@@ -171,12 +163,10 @@ class MainWindow(QMainWindow):
         self.mycursor.execute("SELECT * FROM courses")
         courses = self.mycursor.fetchall()
         
-
         # Check if there are any courses
         if len(courses) == 0:
             QMessageBox.warning(self, "Error", "No course has been added yet.")
             return
-
 
         # Create a dialog window to display the list of courses
         dialog = QDialog(self)
@@ -199,9 +189,10 @@ class MainWindow(QMainWindow):
 
         table.resizeColumnsToContents()  # Adjust column widths
         table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)  # Adjust cell sizes to content
-
         layout.addWidget(table)
-        dialog.exec()  # Display the dialog window
+        dialog.adjustSize()  # Resize the dialog to fit the content
+        
+        dialog.exec()
 
     # C
     def update_course(self):
@@ -366,18 +357,19 @@ class MainWindow(QMainWindow):
         self.input_widgets.append(combo_box)
         self.input_layout.addLayout(course_layout)
 
-       # Add Submit and Back buttons
+       # Add Submit button
         button_layout = QHBoxLayout()
         self.submit_btn = QPushButton("Submit")
         self.submit_btn.clicked.connect(self.save_student)
         button_layout.addWidget(self.submit_btn)
+        
+       # Add Back button
         self.back_btn = QPushButton("Back")
         self.back_btn.clicked.connect(self.delete_form)
         button_layout.addWidget(self.back_btn)
 
         self.input_layout.addLayout(button_layout)
         self.add_layout.addLayout(self.input_layout)
-        self.enable_add_student_button()
         
         # Disable all the other buttons
            # Courses button
@@ -387,6 +379,7 @@ class MainWindow(QMainWindow):
         self.delete_course_btn.setDisabled(True)
         
            # Student buttons
+        self.add_student_btn.setDisabled(True)
         self.search_id_btn.setDisabled(True)
         self.search_name_btn.setDisabled(True)
         self.update_student_btn.setDisabled(True)
@@ -399,7 +392,6 @@ class MainWindow(QMainWindow):
     def delete_form(self):
         self.v_layout.removeWidget(self.add_widget)
         self.add_widget.deleteLater()
-        self.enable_add_student_button()
         
         # Enable all the other buttons back
            # Courses button
@@ -409,6 +401,7 @@ class MainWindow(QMainWindow):
         self.delete_course_btn.setEnabled(True)
         
            # Student buttons
+        self.add_student_btn.setEnabled(True)
         self.search_id_btn.setEnabled(True)
         self.search_name_btn.setEnabled(True)
         self.update_student_btn.setEnabled(True)
@@ -452,12 +445,11 @@ class MainWindow(QMainWindow):
         values = (student_id, student_data[1], student_data[2], student_data[3], student_data[4])
         self.mycursor.execute(insert_query, values)
         self.db.commit()
+        
         QMessageBox.information(self, "Success!", "Student information saved successfully")
-        self.enable_add_student_button()
+        
         self.v_layout.removeWidget(self.add_widget)
         self.add_widget.deleteLater()
-
-        self.enable_add_student_button()
         
         # Enable all the other buttons back
            # Courses button
@@ -467,6 +459,7 @@ class MainWindow(QMainWindow):
         self.delete_course_btn.setEnabled(True)
         
            # Student buttons
+        self.add_student_btn.setEnabled(True)
         self.search_id_btn.setEnabled(True)
         self.search_name_btn.setEnabled(True)
         self.update_student_btn.setEnabled(True)
@@ -485,7 +478,7 @@ class MainWindow(QMainWindow):
         
         # Check if there are any students 
         if len(students) == 0:
-            QMessageBox.warning(self, "Error", "No students have been added yet.")
+            QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
         
         # Check if the students table exists
@@ -515,7 +508,7 @@ class MainWindow(QMainWindow):
         
         # Check if there are any students 
         if len(students) == 0:
-            QMessageBox.warning(self, "Error", "No students have been added yet.")
+            QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
         
         # Check if the students table exists
@@ -563,7 +556,7 @@ class MainWindow(QMainWindow):
         
         # Check if there are any students 
         if len(students) == 0:
-            QMessageBox.warning(self, "Error", "No students have been added yet.")
+            QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
 
         self.id, ok = QInputDialog.getText(self, "Update Student", "Enter ID to update")
@@ -699,7 +692,7 @@ class MainWindow(QMainWindow):
         
         # Check if there are any students 
         if len(students) == 0:
-            QMessageBox.warning(self, "Error", "No students have been added yet.")
+            QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
         
         id = self.get_input('Enter ID of student to delete')
@@ -727,7 +720,7 @@ class MainWindow(QMainWindow):
 
         # Check if there are any students 
         if len(students) == 0:
-            QMessageBox.warning(self, "Error", "No students have been added yet.")
+            QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
 
         # Create a dialog window to display the list of students
@@ -752,8 +745,9 @@ class MainWindow(QMainWindow):
 
         table.resizeColumnsToContents()  # Adjust column widths
         table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)  # Adjust cell sizes to content
-
         layout.addWidget(table)
+        dialog.adjustSize()  # Resize the dialog to fit the content
+        
         dialog.exec()
         
 if __name__ == '__main__':
