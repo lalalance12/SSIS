@@ -472,64 +472,49 @@ class MainWindow(QMainWindow):
        
     # 2
     def search_ID_student(self):  
-        # Select all the students from the students table
-        self.mycursor.execute("SELECT * FROM students")
-        students = self.mycursor.fetchall()
-        
-        # Check if there are any students 
-        if len(students) == 0:
-            QMessageBox.warning(self, "Error", "No student has been added yet.")
-            return
-        
         # Check if the students table exists
-        query = "SHOW TABLES LIKE 'students'"
-        self.mycursor.execute(query)
+        self.mycursor.execute("SHOW TABLES LIKE 'students'")
         table_exists = self.mycursor.fetchone()
         if not table_exists:
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
+        
+        # Get the ID to search from user input
+        student_id, ok = QInputDialog.getText(self, "Search Student", "Enter the ID to search:")
+        if ok:
+            # Query the database for the student with the given ID
+            query = "SELECT * FROM students WHERE student_id = %s"
+            self.mycursor.execute(query, (student_id,))
+            student_data = self.mycursor.fetchone()
 
-        student_id = self.get_input('Enter ID to search')
-
-        query = "SELECT * FROM students WHERE student_id = %s"
-        self.mycursor.execute(query, (student_id,))
-        student_data = self.mycursor.fetchone()
-
-        if student_data:
-            self.show_student_info(student_data)
-        else:
-            self.show_message_box('ID not found in our database')
+            if student_data:
+                self.show_student_info(student_data)
+            else:
+                QMessageBox.information(self, "Not Found", "ID not found in our database.")
 
     # 3
     def search_name_student(self):
-        # Select all the students from the students table
-        self.mycursor.execute("SELECT * FROM students")
-        students = self.mycursor.fetchall()
-        
-        # Check if there are any students 
-        if len(students) == 0:
-            QMessageBox.warning(self, "Error", "No student has been added yet.")
-            return
-        
         # Check if the students table exists
-        query = "SHOW TABLES LIKE 'students'"
-        self.mycursor.execute(query)
+        self.mycursor.execute("SHOW TABLES LIKE 'students'")
         table_exists = self.mycursor.fetchone()
         if not table_exists:
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
+        
+        # Get the name to search from user input
+        name, ok = QInputDialog.getText(self, "Search Student", "Enter the name to search:")
+        if ok:
+            
+            # Query the database for the student with the given name
+            query = "SELECT * FROM students WHERE name = %s"
+            self.mycursor.execute(query, (name,))
+            student_data = self.mycursor.fetchone()
 
-        name = self.get_input('Enter name to search')
-
-        query = "SELECT * FROM students WHERE name = %s"
-        self.mycursor.execute(query, (name,))
-        student_data = self.mycursor.fetchone()
-
-        if student_data:
-            self.show_student_info(student_data)
-        else:
-            self.show_message_box('Name not found in our database')
-    
+            if student_data:
+                self.show_student_info(student_data)
+            else:
+                QMessageBox.information(self, "Not Found", "Name not found in our database.")
+        
     # 3&4.A    
     def get_input(self, message):
         text, ok = QInputDialog.getText(self, 'Input Dialog', message)
@@ -695,23 +680,25 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "No student has been added yet.")
             return
         
-        id = self.get_input('Enter ID of student to delete')
-
-        # Check if the student with the given ID exists
-        query = "SELECT * FROM students WHERE student_id = %s"
-        self.mycursor.execute(query, (id,))
-        existing_student = self.mycursor.fetchone()
-        if not existing_student:
-            self.show_message_box(f'Student with ID {id} not found in the database')
-            return
-
-        # Delete the student from the database
-        delete_query = "DELETE FROM students WHERE student_id = %s"
-        self.mycursor.execute(delete_query, (id,))
-        self.db.commit()
-
-        self.show_message_box(f'Student with ID {id} has been deleted successfully')
+        id, ok = QInputDialog.getText(self, "Enter ID", "Enter the ID of the student to delete:")
     
+        if ok:
+            # Check if the student with the given ID exists
+            query = "SELECT * FROM students WHERE student_id = %s"
+            self.mycursor.execute(query, (id,))
+            existing_student = self.mycursor.fetchone()
+            if not existing_student:
+                self.show_message_box(f'Student with ID {id} not found in the database')
+                return
+
+            # Delete the student from the database
+            delete_query = "DELETE FROM students WHERE student_id = %s"
+            self.mycursor.execute(delete_query, (id,))
+            self.db.commit()
+            self.show_message_box(f'Student with ID {id} has been deleted successfully')
+            
+        else:
+            return
     # 6        
     def list_students(self):
         # Select all the students from the students table
