@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QApplication, QAbstractScrollArea, QMainWindow, QWid
 from PyQt6.QtCore import Qt
 
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
