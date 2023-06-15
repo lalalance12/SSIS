@@ -3,7 +3,6 @@ import sys
 import os.path
 from PyQt6.QtWidgets import QApplication, QAbstractScrollArea, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QInputDialog, QComboBox, QDialog
 from PyQt6.QtCore import Qt
-from PyQt6 import QtCore
 
 
 class MainWindow(QMainWindow):
