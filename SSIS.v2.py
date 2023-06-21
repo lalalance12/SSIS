@@ -233,13 +233,21 @@ class MainWindow(QMainWindow):
             if not new_course_name:
                 QMessageBox.warning(self, 'Error', 'Please enter a course name.')
                 return
-
+            
             # Update the course name in the database
             self.mycursor.execute("UPDATE courses SET course = %s WHERE course_code = %s", (new_course_name, course_code))
             self.db.commit()
             QMessageBox.information(self, 'Success', 'Course name updated successfully!')
 
         elif choice == 'Course Code':
+            # Check if the course code is used in the students table
+            self.mycursor.execute("SELECT * FROM students WHERE course_code = %s", (course_code,))
+            students = self.mycursor.fetchall()
+            if len(students) > 0:
+                QMessageBox.warning(self, "Error", "The course is being used by one or more students. Cannot delete.")
+                QMessageBox.warning(self, "Note", "If you want to proceed in updating the course, FIRST delete or update the students' course that use the course code.")
+                return
+            
             new_course_code, ok = QInputDialog.getText(self, 'Update Course', 'Enter new course code:')
             if not ok:
                 return
@@ -255,7 +263,7 @@ class MainWindow(QMainWindow):
             if not new_course_code:
                 QMessageBox.warning(self, 'Error', 'Please enter a course code.')
                 return
-
+            
             # Update the course code in the database
             self.mycursor.execute("UPDATE courses SET course_code = %s WHERE course_code = %s", (new_course_code, course_code))
             self.db.commit()
@@ -278,6 +286,14 @@ class MainWindow(QMainWindow):
         if not ok:
             return
 
+        # Check if the course code is used in the students table
+        self.mycursor.execute("SELECT * FROM students WHERE course_code = %s", (course_code,))
+        students = self.mycursor.fetchall()
+        if len(students) > 0:
+            QMessageBox.warning(self, "Error", "The course is being used by one or more students. Cannot delete.")
+            QMessageBox.warning(self, "Note", "If you want to proceed in deleting the course, FIRST delete or update the students' course that use the course code.")
+            return
+        
         # Delete the course from the database
         self.mycursor.execute("DELETE FROM courses WHERE course_code = %s", (course_code,))
         self.db.commit()
