@@ -1,7 +1,7 @@
 import sys
 import mysql.connector
 
-from PyQt6.QtWidgets import QApplication, QAbstractScrollArea, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QInputDialog, QComboBox, QDialog
+from PyQt6.QtWidgets import QApplication, QAbstractScrollArea, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QTableWidget, QTableWidgetItem, QMessageBox, QInputDialog, QComboBox, QDialog, QTableWidget, QTableWidgetItem, QHeaderView, QFrame
 from PyQt6.QtCore import Qt
 
 
@@ -10,12 +10,12 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SSIS")
-        self.setGeometry(100, 100, 300, 400)
+        self.setGeometry(100, 100, 1100, 500)
         
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        self.v_layout = QVBoxLayout(self.central_widget)
-        
+        self.main_frame = QVBoxLayout(self.central_widget)
+               
         # Connect to MySQL database
         self.db = mysql.connector.connect(
             host = "localhost",
@@ -66,6 +66,8 @@ class MainWindow(QMainWindow):
             "font-weight: bold;"  # Font weight
             "font-family: 'Arial', sans-serif;"  # Font Style
         )
+        
+        
 
         # First column
         column1_layout = QVBoxLayout()
@@ -112,17 +114,55 @@ class MainWindow(QMainWindow):
         self.list_student_btn = QPushButton("List Students", self)
         self.list_student_btn.clicked.connect(self.list_students)
         column2_layout.addWidget(self.list_student_btn)
+               
+        # Creating New Layout with MainFrame (which is v_layout before)
+        Inside_MainFrame = QHBoxLayout()
+        self.main_frame.addLayout(Inside_MainFrame)  
         
-        # Add both columns to the main layout
-        main_layout = QVBoxLayout()
-        sub_layout = QHBoxLayout()
-        main_layout.addWidget(title_label)
-        main_layout.addLayout(sub_layout)
-        sub_layout.addLayout(column1_layout)
-        sub_layout.addLayout(column2_layout)
+        Left_IMF = QVBoxLayout()
+        Inside_MainFrame.addLayout(Left_IMF)       
+        Buttons_Left_IMF = QHBoxLayout()
+        Buttons_Left_IMF.addLayout(column1_layout)
+        Buttons_Left_IMF.addLayout(column2_layout)
+        Left_IMF.addWidget(title_label)
+        Left_IMF.addLayout(Buttons_Left_IMF)
         
-        self.v_layout.addLayout(main_layout)
+        Right_IMF = QVBoxLayout()
+        Inside_MainFrame.addLayout(Right_IMF)
+  
+        # Search bar widget
+        search_bar = QLineEdit()
+        search_bar.setPlaceholderText("Search student...")
+        Right_IMF.addWidget(search_bar)
+
+        # Table widget
+        table_widget = QTableWidget()
+        table_widget.setColumnCount(5) 
+        table_widget.setHorizontalHeaderLabels(["Student ID", "Name", "Gender", "Year Level", "Course Code"])
+        Right_IMF.addWidget(table_widget)
+        
+        
+        # Connect the search bar textChanged signal to search_students function
+        search_bar.textChanged.connect(lambda text: self.search_students(text, table_widget))
+
     
+    
+    # Function to search students based on input text
+    def search_students(self, search_text, table_widget):
+        
+        # 
+        self.mycursor.execute("SELECT * FROM students WHERE student_id LIKE %s OR name LIKE %s OR gender LIKE %s OR year_level LIKE %s OR course_code LIKE %s",
+                            (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
+        result = self.mycursor.fetchall()
+        
+        #Setup the table
+        table_widget.clearContents()
+        table_widget.setRowCount(len(result))
+        for row, student in enumerate(result):
+            for col, data in enumerate(student):
+                item = QTableWidgetItem(str(data))
+                table_widget.setItem(row, col, item)   
+                     
     # A
     def add_course(self):
         
@@ -403,11 +443,11 @@ class MainWindow(QMainWindow):
         self.delete_student_btn.setDisabled(True)
         self.list_student_btn.setDisabled(True)
 
-        self.v_layout.addWidget(self.add_widget)
+        self.main_frame.addWidget(self.add_widget)
         
     # 1.A    
     def delete_form(self):
-        self.v_layout.removeWidget(self.add_widget)
+        self.main_frame.removeWidget(self.add_widget)
         self.add_widget.deleteLater()
         
         # Enable all the other buttons back
@@ -465,7 +505,7 @@ class MainWindow(QMainWindow):
         
         QMessageBox.information(self, "Success!", "Student information saved successfully")
         
-        self.v_layout.removeWidget(self.add_widget)
+        self.main_frame.removeWidget(self.add_widget)
         self.add_widget.deleteLater()
         
         # Enable all the other buttons back
@@ -483,7 +523,7 @@ class MainWindow(QMainWindow):
         self.delete_student_btn.setEnabled(True)
         self.list_student_btn.setEnabled(True)
     
-        self.v_layout.removeWidget(self.add_widget)
+        self.main_frame.removeWidget(self.add_widget)
         self.add_widget.deleteLater()
      
        
@@ -628,7 +668,7 @@ class MainWindow(QMainWindow):
         back_button.clicked.connect(self.erase_update_form)
         self.update_layout.addWidget(back_button)
 
-        self.v_layout.addWidget(self.update_widget)
+        self.main_frame.addWidget(self.update_widget)
 
     # 4.B
     def update_student_data(self):
@@ -667,7 +707,7 @@ class MainWindow(QMainWindow):
     # 4.C
     def erase_update_form(self):
         if self.update_widget:
-            self.v_layout.removeWidget(self.update_widget)
+            self.main_frame.removeWidget(self.update_widget)
             self.update_widget.deleteLater()
             self.update_widget = None
             
