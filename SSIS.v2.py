@@ -328,7 +328,7 @@ class MainWindow(QMainWindow):
         id_layout = QHBoxLayout()
         id_label = QLabel("Student ID:")
         id_line_edit = QLineEdit()
-        id_line_edit.setPlaceholderText("xxxx-xxxx")  # Example text as a placeholder
+        id_line_edit.setPlaceholderText("xxxx-xxxx")
         id_layout.addWidget(id_label)
         id_layout.addWidget(id_line_edit)
         self.input_widgets.append(id_line_edit)
@@ -338,7 +338,7 @@ class MainWindow(QMainWindow):
         name_layout = QHBoxLayout()
         name_label = QLabel("Student Name:")
         name_line_edit = QLineEdit()
-        name_line_edit.setPlaceholderText("First Name, Middle Initial, Last Name")  # Example text as a placeholder
+        name_line_edit.setPlaceholderText("First Name, Middle Initial, Last Name")  
         name_layout.addWidget(name_label)
         name_layout.addWidget(name_line_edit)
         self.input_widgets.append(name_line_edit)
@@ -347,20 +347,21 @@ class MainWindow(QMainWindow):
         # Add Gender field
         gender_layout = QHBoxLayout()
         gender_label = QLabel("Gender:")
-        gender_line_edit = QLineEdit()
+        gender_combo_box = QComboBox()
+        gender_combo_box.addItems(["Male", "Female", "Other"])  
         gender_layout.addWidget(gender_label)
-        gender_layout.addWidget(gender_line_edit)
-        self.input_widgets.append(gender_line_edit)
+        gender_layout.addWidget(gender_combo_box)
+        self.input_widgets.append(gender_combo_box)
         self.input_layout.addLayout(gender_layout)
 
         # Add Year Level field
         year_layout = QHBoxLayout()
         year_label = QLabel("Year Level:")
-        year_line_edit = QLineEdit()
-        year_line_edit.setPlaceholderText("xxx year")  # Example text as a placeholder
+        year_combo_box = QComboBox()
+        year_combo_box.addItems(["1st year", "2nd year", "3rd year", "4th year", "5th year", "6th year", "Other"])  
         year_layout.addWidget(year_label)
-        year_layout.addWidget(year_line_edit)
-        self.input_widgets.append(year_line_edit)
+        year_layout.addWidget(year_combo_box)
+        self.input_widgets.append(year_combo_box)
         self.input_layout.addLayout(year_layout)
 
         # Add Course Code field
