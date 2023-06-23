@@ -736,7 +736,7 @@ class MainWindow(QMainWindow):
         table = QTableWidget(dialog)
         table.setColumnCount(5)  # Number of fields
         table.setHorizontalHeaderLabels(["Student ID", "Name", "Gender", "Year Level", "Course Code"])
-        table.verticalHeader().setVisible(False)
+        table.verticalHeader().setVisible(True)
 
         table.setRowCount(len(students))
         for i, row_data in enumerate(students):
