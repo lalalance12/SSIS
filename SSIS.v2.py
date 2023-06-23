@@ -10,7 +10,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SSIS")
-        self.setGeometry(100, 100, 1100, 500)
+        self.setGeometry(100, 100, 1070, 500)
         
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -147,15 +147,15 @@ class MainWindow(QMainWindow):
 
     
     
-    # Function to search students based on input text
+    # I
     def search_students(self, search_text, table_widget):
         
-        # 
+        # Find the data the in the students table
         self.mycursor.execute("SELECT * FROM students WHERE student_id LIKE %s OR name LIKE %s OR gender LIKE %s OR year_level LIKE %s OR course_code LIKE %s",
-                            (f"%{search_text}%", f"%{search_text}%", f"%{search_text}%", f"%{search_text}%", f"%{search_text}%"))
+                            (f"{search_text}%", f"{search_text}%", f"{search_text}%", f"{search_text}%", f"{search_text}%"))
         result = self.mycursor.fetchall()
         
-        #Setup the table
+        #Set up the table
         table_widget.clearContents()
         table_widget.setRowCount(len(result))
         for row, student in enumerate(result):
